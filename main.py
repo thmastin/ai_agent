@@ -97,30 +97,45 @@ if len(sys.argv) < 2:
     print("A prompt must be provided")
     sys.exit(1)
 
-user_prompt = sys.argv[1]  
-
+user_prompt = sys.argv[1]
 messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
-
 response = client.models.generate_content(model=model_name, contents=messages, config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt))
 function_calls = response.function_calls
 
-function_results = []
 
-if function_calls:
-    for function in function_calls:
-        if sys.argv[2] == "--verbose":
-            function_response = call_function(function, verbose=True)
-        else:
-            function_response = call_function(function)
-        
-        if not function_response.parts[0].function_response.response:
-            raise Exception("Error: The function returned no ouput")
-        elif sys.argv[2] == "--verbose":
-            print(f"-> {function_response.parts[0].function_response.response["result"]}")
-        else:
-            function_results.append(function_response)
-else:    
-    print(response.text)
+
+count = 0
+while True:
+    if count >= 20:
+        break
+    candidates = response.candidates
+    if candidates:
+        for candidate in candidates:
+            messages.append(candidate.content)
+    function_calls = response.function_calls
+
+    if function_calls:
+        for function in function_calls:
+            if len(sys.argv) > 2 and sys.argv[2] == "--verbose":
+                function_response = call_function(function, verbose=True)
+            else:
+                function_response = call_function(function)
+            
+            if not function_response.parts[0].function_response.response:
+                raise Exception("Error: The function returned no ouput")
+            elif len(sys.argv) > 2 and sys.argv[2] == "--verbose":
+                print(f"-> {function_response.parts[0].function_response.response["result"]}")
+                messages.append(function_response)
+            else:
+                messages.append(function_response)
+        response = client.models.generate_content(model=model_name, contents=messages, config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt))
+        count += 1
+        continue
+
+    else:    
+        print(response.text)
+        break
+
 prompt_usage = response.usage_metadata.prompt_token_count
 response_usage = response.usage_metadata.candidates_token_count
 if len(sys.argv) > 2 and sys.argv[2] == "--verbose":
