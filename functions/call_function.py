@@ -1,9 +1,8 @@
-import os
 from google.genai import types
-from get_file_content import get_file_content
-from get_files_info import get_files_info
-from run_python_file import run_python_file
-from write_file import write_file
+from functions.get_file_content import get_file_content
+from functions.get_files_info import get_files_info
+from functions.run_python_file import run_python_file
+from functions.write_file import write_file
 
 def call_function(function_call_part, verbose=False):
     if verbose:

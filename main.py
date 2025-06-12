@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 import sys
+from functions.call_function import call_function
 
 
 load_dotenv()
@@ -18,7 +19,7 @@ When a user asks a question or makes a request, make a function call plan. You c
 - Read file contents
 - Execute Python files with optional arguments
 - Write or overwrite files
-
+2
 All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
 """
 
@@ -103,9 +104,21 @@ messages = [types.Content(role="user", parts=[types.Part(text=user_prompt)]),]
 response = client.models.generate_content(model=model_name, contents=messages, config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt))
 function_calls = response.function_calls
 
+function_results = []
+
 if function_calls:
     for function in function_calls:
-        print(f"Calling function: {function.name}({function.args})")
+        if sys.argv[2] == "--verbose":
+            function_response = call_function(function, verbose=True)
+        else:
+            function_response = call_function(function)
+        
+        if not function_response.parts[0].function_response.response:
+            raise Exception("Error: The function returned no ouput")
+        elif sys.argv[2] == "--verbose":
+            print(f"-> {function_response.parts[0].function_response.response["result"]}")
+        else:
+            function_results.append(function_response)
 else:    
     print(response.text)
 prompt_usage = response.usage_metadata.prompt_token_count

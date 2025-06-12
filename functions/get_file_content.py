@@ -4,9 +4,6 @@ def get_file_content(working_directory, file_path):
     working_path = os.path.abspath(working_directory)
     file_path = os.path.abspath(os.path.join(working_path, file_path))
 
-    print(working_path)
-    print(file_path)
-
     if file_path.startswith(working_path + os.sep) is False:
         return f'Error: Cannot read "{file_path}" as it is outside the permitted working directory'
     
